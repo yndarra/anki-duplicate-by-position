@@ -1,0 +1,7 @@
+{
+    "package": "duplicate_by_position",
+    "name": "Duplicate & Reorder by Position",
+    "homepage": "https://github.com/yndarra/anki-duplicate-by-position",
+    "conflicts": [],
+    "min_point_version": 231000
+}
