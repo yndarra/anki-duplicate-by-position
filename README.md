@@ -2,7 +2,7 @@
 
 An Anki add-on for the card browser that works with the **position of new cards** (the `New #` number in the *Due* column), not with creation dates.
 
-- **Duplicate after** (`Ctrl+Alt+D`): copies the selected note(s) and puts each copy **right after its original** in the new-card queue. Every card after it moves down by one, so there are no gaps or duplicate positions.
+- **Duplicate after** (`Alt+D`): copies the selected note(s) and puts each copy **right after its original** in the new-card queue. Every card after it moves down by one, so there are no gaps or duplicate positions.
 - **Move position up / down** (`Alt+Up` / `Alt+Down`): moves the selected new cards one position up or down among the cards currently shown in the browser. A block of selected cards moves together, and sibling cards (front/back of one note) stay together.
 
 It is inspired by [Duplicate and Reorder](https://ankiweb.net/shared/info/1114271285). That add-on reorders notes by their *creation time* and only works when the browser is sorted by *Created*. This one changes the actual **study order of new cards**.
@@ -36,12 +36,12 @@ Requires Anki 23.10+. Tested with 26.09.
 
 Дополнение для браузера карточек Anki. Оно работает с **позицией новых карточек** (номер `New #` в колонке *Due*), а не с датами создания.
 
-- **Дублировать после** (`Ctrl+Alt+D`): копия выделенной заметки встаёт **сразу за оригиналом** в очереди новых карточек. Все последующие карточки сдвигаются на одну позицию, без дыр и дублей.
+- **Дублировать после** (`Alt+D`): копия выделенной заметки встаёт **сразу за оригиналом** в очереди новых карточек. Все последующие карточки сдвигаются на одну позицию, без дыр и дублей.
 - **Позиция выше / ниже** (`Alt+↑` / `Alt+↓`): сдвигает выделенные новые карточки на одну позицию среди показанных в браузере. Несколько выделенных карточек двигаются блоком, карточки одной заметки не разлучаются.
 
 Каждое действие отменяется одним `Ctrl+Z`. Команды есть в меню **Записи** и **Карточки** и в контекстном меню.
 
-`Ctrl+Alt+D`, а не `Alt+D`, выбрано потому, что в русском интерфейсе на `Alt+D` (физическая клавиша «В») уже висит меню «&Вид».
+В русском интерфейсе на той же клавише, что и `Alt+D`, висит меню «&Вид» (буква «В»). Если при русской раскладке `Alt+D` не срабатывает, переключитесь на английскую или смените сочетание в настройках.
 
 ## License
 MIT

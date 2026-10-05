@@ -4,7 +4,7 @@ Like <a href="https://ankiweb.net/shared/info/1114271285">Duplicate and Reorder<
 
 <b>Commands</b> (card browser → Notes / Cards menu, right-click menu or shortcut):
 <ul>
-<li><b>Duplicate after</b>, <code>Ctrl+Alt+D</code>: copies the selected note(s). Each copy goes right after its original, and all following new cards move down by one, so there are no gaps or duplicate positions.</li>
+<li><b>Duplicate after</b>, <code>Alt+D</code>: copies the selected note(s). Each copy goes right after its original, and all following new cards move down by one, so there are no gaps or duplicate positions.</li>
 <li><b>Move position up / down</b>, <code>Alt+Up</code> / <code>Alt+Down</code>: moves the selected new cards one position among the cards shown in the browser. A block of selected cards moves together, and siblings stay together.</li>
 </ul>
 
