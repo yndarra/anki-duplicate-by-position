@@ -13,7 +13,7 @@ Like <a href="https://ankiweb.net/shared/info/1114271285">Duplicate and Reorder<
 <li>Every command is a single undo step (<code>Ctrl+Z</code>).</li>
 <li>Copies keep the note type, fields and tags, but not the review history. The copy's cards go to the original's decks (its home deck if the original is in a filtered deck).</li>
 <li>If the original has already been studied, the copy goes to the position the original had while it was new. If that is unknown, the copy goes to the end, and a tooltip tells you.</li>
-<li>Shortcuts, an optional tag for copies and auto-selecting the copy can be set in the add-on config.</li>
+<li>A settings window (Config button or Cards menu) lets you change shortcuts by pressing them. Changes apply immediately, and the window warns about conflicts with other browser shortcuts and menus. You can also set an optional tag for copies.</li>
 <li>Russian and English interface.</li>
 </ul>
 

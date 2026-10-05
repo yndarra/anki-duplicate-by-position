@@ -10,10 +10,9 @@
 Вся работа с коллекцией — в core.py; здесь только меню, клавиши,
 запуск операций в фоне и обновление списка.
 
-Оговорка про Alt+D: в русском интерфейсе у меню «&Вид» буква «В» стоит на
-той же физической клавише, что и D. При включённой русской раскладке Qt может
-счесть Alt+D неоднозначным, и тогда не сработает ни меню, ни команда.
-Сочетание меняется в настройках дополнения (shortcut_duplicate).
+Сочетания меняются в окне настроек (settings.py): Tools → Add-ons → Config
+или меню «Карточки» браузера. Окно предупреждает о пересечениях — например,
+что Alt+D при русской раскладке совпадает с открытием меню «&Вид».
 """
 
 from __future__ import annotations
@@ -22,61 +21,18 @@ from collections.abc import Callable, Sequence
 
 from anki.cards import CardId
 from anki.collection import Collection, OpChanges
-import anki.lang
 from anki.notes import NoteId
 from aqt import gui_hooks, mw
 from aqt.browser import Browser
 from aqt.operations import CollectionOp
-from aqt.qt import QAction, QKeySequence, QMenu
+import weakref
+
+from aqt.qt import QAction, QKeySequence, QMenu, QWidget
 from aqt.utils import tooltip
 
 from . import core
-
-# --- Тексты: русский, если Anki на русском, иначе английский -------------
-
-_TEXTS = {
-    "ru": {
-        "duplicate": "Дублировать после (по позиции)",
-        "move_up": "Позиция выше",
-        "move_down": "Позиция ниже",
-        "undo_duplicate": "Дублировать после",
-        "undo_move": "Изменить позицию",
-        "nothing_selected": "Ничего не выделено",
-        "duplicated": "Создано копий: {n}",
-        "at_end": "Оригинал без позиции — копия добавлена в конец: {n}",
-        "cant_move": "Двигать некуда (или среди выделенного нет новых карточек)",
-    },
-    "en": {
-        "duplicate": "Duplicate after (by position)",
-        "move_up": "Move position up",
-        "move_down": "Move position down",
-        "undo_duplicate": "Duplicate after",
-        "undo_move": "Change position",
-        "nothing_selected": "Nothing selected",
-        "duplicated": "Copies created: {n}",
-        "at_end": "Original has no position — copy added at the end: {n}",
-        "cant_move": "Nothing to move (or no new cards in the selection)",
-    },
-}
-
-
-def _t(key: str, **kwargs: object) -> str:
-    # Читаем при каждом вызове: язык задаётся уже после загрузки дополнения.
-    lang = "ru" if (anki.lang.current_lang or "").lower().startswith("ru") else "en"
-    return _TEXTS[lang][key].format(**kwargs)
-
-
-def _config() -> dict:
-    """Настройки из Tools → Add-ons → Config (с запасными значениями)."""
-    cfg = mw.addonManager.getConfig(__name__) or {}
-    return {
-        "shortcut_duplicate": cfg.get("shortcut_duplicate", "Alt+D"),
-        "shortcut_move_up": cfg.get("shortcut_move_up", "Alt+Up"),
-        "shortcut_move_down": cfg.get("shortcut_move_down", "Alt+Down"),
-        "tag_for_copies": cfg.get("tag_for_copies", ""),
-        "select_copy": cfg.get("select_copy", True),
-    }
-
+from .common import ADDON, SHORTCUT_KEYS, get_config, t
+from .settings import SettingsDialog, add_settings_to_menu
 
 # --- Общие помощники -----------------------------------------------------
 
@@ -126,9 +82,9 @@ def _run_undoable(
 def on_duplicate(browser: Browser) -> None:
     nids: Sequence[NoteId] = browser.table.get_selected_note_ids()
     if not nids:
-        tooltip(_t("nothing_selected"), parent=browser)
+        tooltip(t("nothing_selected"), parent=browser)
         return
-    cfg = _config()
+    cfg = get_config()
     result: dict[str, object] = {}
 
     def work(col: Collection) -> None:
@@ -147,13 +103,13 @@ def on_duplicate(browser: Browser) -> None:
             first_cards = mw.col.card_ids_of_note(copies[0])
             if first_cards:
                 browser.table.select_single_card(first_cards[0])
-        message = _t("duplicated", n=len(copies))
+        message = t("duplicated", n=len(copies))
         if result.get("at_end"):
-            message += "<br>" + _t("at_end", n=result["at_end"])
+            message += "<br>" + t("at_end", n=result["at_end"])
         tooltip(message, parent=browser)
 
     _after_editor_saved(
-        browser, lambda: _run_undoable(browser, _t("undo_duplicate"), work, done)
+        browser, lambda: _run_undoable(browser, t("undo_duplicate"), work, done)
     )
 
 
@@ -163,7 +119,7 @@ def on_duplicate(browser: Browser) -> None:
 def on_move(browser: Browser, up: bool) -> None:
     selected: Sequence[CardId] = browser.table.get_selected_card_ids()
     if not selected:
-        tooltip(_t("nothing_selected"), parent=browser)
+        tooltip(t("nothing_selected"), parent=browser)
         return
     search = _browser_search_text(browser)
     result: dict[str, int] = {}
@@ -175,27 +131,57 @@ def on_move(browser: Browser, up: bool) -> None:
 
     def done() -> None:
         if not result.get("changed"):
-            tooltip(_t("cant_move"), parent=browser)
+            tooltip(t("cant_move"), parent=browser)
             return
         # Пересортировываем список; браузер сам сохранит выделение по id карточек.
         browser.search()
 
     _after_editor_saved(
-        browser, lambda: _run_undoable(browser, _t("undo_move"), work, done)
+        browser, lambda: _run_undoable(browser, t("undo_move"), work, done)
     )
 
 
 # --- Меню и клавиши ------------------------------------------------------
 
+# Все открытые окна браузера: чтобы новые сочетания из окна настроек
+# применялись сразу, без перезапуска. WeakSet сам забывает закрытые окна.
+_BROWSERS: "weakref.WeakSet[Browser]" = weakref.WeakSet()
 
-def _make_action(
-    browser: Browser, text: str, shortcut: str, handler: Callable[[], None]
-) -> QAction:
+
+def _make_action(browser: Browser, text: str, handler: Callable[[], None]) -> QAction:
     action = QAction(text, browser)
-    if shortcut:
-        action.setShortcut(QKeySequence(shortcut))
     action.triggered.connect(lambda _checked=False: handler())
     return action
+
+
+def _apply_shortcuts(browser: Browser, cfg: dict) -> None:
+    """Ставит сочетания из настроек на действия этого окна (пустое — без клавиши)."""
+    actions: dict[str, QAction] = getattr(browser, "_dbp_actions", {})
+    for key in SHORTCUT_KEYS:
+        action = actions.get(key)
+        if action is None:
+            continue
+        try:
+            action.setShortcut(QKeySequence(str(cfg.get(key) or "")))
+        except RuntimeError:
+            # Окно уже уничтожено Qt, а Python-обёртка ещё жива — пропускаем.
+            pass
+
+
+def _on_settings_saved(cfg: dict) -> None:
+    for browser in list(_BROWSERS):
+        _apply_shortcuts(browser, cfg)
+    tooltip(t("saved"))
+
+
+def open_settings(parent: QWidget | None = None, browser: Browser | None = None) -> None:
+    """Открывает окно настроек. Без браузера берём любое открытое окно —
+    по нему проверяются пересечения с клавишами Anki."""
+    if browser is None:
+        browser = next(iter(_BROWSERS), None)
+    own = list(getattr(browser, "_dbp_actions", {}).values()) if browser else []
+    dialog = SettingsDialog(parent or browser or mw, browser, own, _on_settings_saved)
+    dialog.exec()
 
 
 def on_browser_menus_did_init(browser: Browser) -> None:
@@ -204,25 +190,23 @@ def on_browser_menus_did_init(browser: Browser) -> None:
     Хук срабатывает для каждого нового окна, поэтому команды работают и
     в дополнительных окнах (например, из Multiple Browser Windows).
     """
-    cfg = _config()
-    duplicate = _make_action(
-        browser, _t("duplicate"), cfg["shortcut_duplicate"], lambda: on_duplicate(browser)
-    )
-    move_up = _make_action(
-        browser, _t("move_up"), cfg["shortcut_move_up"], lambda: on_move(browser, True)
-    )
-    move_down = _make_action(
-        browser, _t("move_down"), cfg["shortcut_move_down"], lambda: on_move(browser, False)
-    )
+    actions = {
+        "shortcut_duplicate": _make_action(browser, t("duplicate"), lambda: on_duplicate(browser)),
+        "shortcut_move_up": _make_action(browser, t("move_up"), lambda: on_move(browser, True)),
+        "shortcut_move_down": _make_action(
+            browser, t("move_down"), lambda: on_move(browser, False)
+        ),
+    }
+    browser._dbp_actions = actions  # type: ignore[attr-defined]
+    _apply_shortcuts(browser, get_config())
+    _BROWSERS.add(browser)
 
     browser.form.menu_Notes.addSeparator()
-    browser.form.menu_Notes.addAction(duplicate)
+    browser.form.menu_Notes.addAction(actions["shortcut_duplicate"])
     browser.form.menu_Cards.addSeparator()
-    browser.form.menu_Cards.addAction(move_up)
-    browser.form.menu_Cards.addAction(move_down)
-
-    # Запоминаем действия на окне, чтобы показать их и в контекстном меню.
-    browser._dbp_actions = [duplicate, move_up, move_down]  # type: ignore[attr-defined]
+    browser.form.menu_Cards.addAction(actions["shortcut_move_up"])
+    browser.form.menu_Cards.addAction(actions["shortcut_move_down"])
+    add_settings_to_menu(browser.form.menu_Cards, lambda: open_settings(browser, browser))
 
 
 def on_browser_context_menu(browser: Browser, menu: QMenu) -> None:
@@ -230,9 +214,11 @@ def on_browser_context_menu(browser: Browser, menu: QMenu) -> None:
     if not actions:
         return
     menu.addSeparator()
-    for action in actions:
+    for action in actions.values():
         menu.addAction(action)
 
 
 gui_hooks.browser_menus_did_init.append(on_browser_menus_did_init)
 gui_hooks.browser_will_show_context_menu.append(on_browser_context_menu)
+# Кнопка Config в Tools → Add-ons открывает наше окно вместо JSON-редактора.
+mw.addonManager.setConfigAction(ADDON, lambda: open_settings(mw))

@@ -21,8 +21,12 @@ Each command is a single undo step (`Ctrl+Z`).
 - New-card positions are shared by the whole collection, so inserting a copy also shifts new cards in other decks. Their relative order never changes.
 - **Move** only uses the cards matching the current browser search. Cards outside the search keep their positions.
 
-## Configuration
-Tools → Add-ons → *Duplicate & Reorder by Position* → Config: shortcuts, `tag_for_copies`, `select_copy`.
+## Settings
+Tools → Add-ons → *Duplicate & Reorder by Position* → **Config**, or **Cards → "Duplicate by Position" shortcuts…** in the browser. A window opens where you can:
+- change shortcuts by pressing them (or clear them);
+- set a tag for copies and choose whether to auto-select the copy.
+
+Changes apply immediately in all open browser windows, without restarting Anki. The window warns when a shortcut is already used by another browser command, by two of this add-on's commands at once, or by a menu (`Alt+letter`). It also checks the Russian keyboard layout: `Alt+D` = the "&Вид" menu.
 
 ## Development
 - `run_tests.bat`: runs tests against a real temporary Anki collection (`pip install anki`).
@@ -41,7 +45,7 @@ Requires Anki 23.10+. Tested with 26.09.
 
 Каждое действие отменяется одним `Ctrl+Z`. Команды есть в меню **Записи** и **Карточки** и в контекстном меню.
 
-В русском интерфейсе на той же клавише, что и `Alt+D`, висит меню «&Вид» (буква «В»). Если при русской раскладке `Alt+D` не срабатывает, переключитесь на английскую или смените сочетание в настройках.
+Сочетания меняются в окне настроек: Tools → Add-ons → Config или **Карточки → «Сочетания „Дубль по позиции“…»** в браузере. Новые клавиши применяются сразу, без перезапуска. Окно предупреждает о пересечениях, в том числе что `Alt+D` при русской раскладке совпадает с меню «&Вид».
 
 ## License
 MIT
