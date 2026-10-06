@@ -1,5 +1,8 @@
 # Duplicate & Reorder by Position
 
+**Install:** in Anki go to Tools → Add-ons → Get Add-ons… and enter the code **`282192841`** ([AnkiWeb page](https://ankiweb.net/shared/info/282192841)).
+**Установка:** Инструменты → Дополнения → Скачать дополнения… → код **`282192841`**.
+
 An Anki add-on for the card browser that works with the **position of new cards** (the `New #` number in the *Due* column), not with creation dates.
 
 - **Duplicate after** (`Alt+D`): copies the selected note(s) and puts each copy **right after its original** in the new-card queue. Every card after it moves down by one, so there are no gaps or duplicate positions.
